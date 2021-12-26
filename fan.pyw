@@ -2,17 +2,20 @@ import subprocess
 import serial
 import time
 import os
-from tkinter import messagebox
 
 def checkPumpSpeed(index):
+    label = subprocess.getstatusoutput("reg query HKEY_CURRENT_USER\SOFTWARE\HWiNFO64\VSB /v Label" + index)
+
+    sensor = float(label[1].split('   ')[3].strip())
+
+    if (sensor != "AIO Pump"):
+        os.system('shutdown /s /t 1')
+    
     data = subprocess.getstatusoutput("reg query HKEY_CURRENT_USER\SOFTWARE\HWiNFO64\VSB /v ValueRaw" + index)
 
     speed = float(data[1].split('   ')[3].strip())
     
     if (speed < 1500):
-        errormsg = 'Low pump speed detected: ' + str(speed) + ' rpm. Shutting down'
-        messagebox.showerror('Pump error', errormsg)
-        
         os.system('shutdown /s /t 1')
 
 
@@ -32,8 +35,11 @@ def getMemJunct(index):
     
 def main():
     while 1:
-        time.sleep(2)    
-        checkPumpSpeed("0")
+        try:
+            checkPumpSpeed("0")
+        except:
+            os.system('shutdown /s /t 1')
+            
         try:
             
             ssd = getSSDTemp("1")
@@ -56,7 +62,7 @@ def main():
         setPwm = str(setPwm)
         
         arduino.write(bytes(setPwm, 'utf-8'))
-        time.sleep(2)
+        time.sleep(0.25)
         data = arduino.readline()
         print(data)  
     
